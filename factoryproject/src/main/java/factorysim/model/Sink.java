@@ -27,6 +27,9 @@ public class Sink implements Tockable, StatResettable {
     public static final String BELT_NAME = "sink";
 
     //YOUR FIELDS GO HERE!
+    private List<OutputSource> sources;
+    private Map<String, Long> itemCounts;
+    private long totalTocks;
 
     /** Initialise a Sink object. This takes no parameters.
      * This should set up any fields you decide the class should have to default values if relevant.
@@ -35,7 +38,9 @@ public class Sink implements Tockable, StatResettable {
      * You might find a Map (e.g. LinkedHashMap) useful for this, but you can choose your own data structure(s) as you see fit
      */
     public Sink() {
-        // YOUR CODE HERE
+        itemCounts = new LinkedHashMap<>();
+        sources = new ArrayList<>();
+        totalTocks = 0;
     }
 
     /** 
@@ -48,7 +53,10 @@ public class Sink implements Tockable, StatResettable {
     * @param source Any object that implements the provided OutputSource interface.
     */
     public void addSource(OutputSource source) {
-        // YOUR CODE HERE
+        // avoid null issue
+        if (source != null){
+            sources.add(source);
+        }
     }
 
     /**
@@ -57,7 +65,17 @@ public class Sink implements Tockable, StatResettable {
      */
     @Override
     public void tock() {
-        // YOUR CODE HERE
+        for (OutputSource source : sources) {
+            if (source == null) continue;
+            while (source.canPull()) {
+                String item = source.itemType(); // get type BEFORE pulling
+                source.pullItem();               // consume one item
+
+                itemCounts.put(item, itemCounts.getOrDefault(item, 0L) + 1);
+            }
+        }
+
+        totalTocks++;
     }
 
     /**
@@ -67,7 +85,7 @@ public class Sink implements Tockable, StatResettable {
      * Remember that an ArrayList is an implementation of List!
      */
     public List<String> getItemTypes() {
-        // YOUR CODE HERE
+        return new ArrayList<>(itemCounts.keySet());
     }
 
     /**
@@ -83,7 +101,12 @@ public class Sink implements Tockable, StatResettable {
      * @return a double representing the average number of items of the given type consumed per minute since last reset.
      */
     public double getAvgItemsPerMinute(String itemType) {
-        // YOUR CODE HERE
+        if (totalTocks == 0) {
+            return 0.0;
+        }
+        long count = itemCounts.getOrDefault(itemType, 0L);
+
+        return (count / (double) totalTocks) * 60;
     }
 
     /** 
@@ -94,7 +117,7 @@ public class Sink implements Tockable, StatResettable {
      * since the last reset. 
      * */
     public long getItemsConsumed(String itemType) {
-        // YOUR CODE HERE
+        return itemCounts.getOrDefault(itemType, 0L);
     }
 
     /**
@@ -103,7 +126,7 @@ public class Sink implements Tockable, StatResettable {
      * @return boolean true if no items have been consumed since last reset, false otherwise.
      */
     public boolean isEmpty() {
-        // YOUR CODE HERE
+        return itemCounts.isEmpty();
     }
 
     /** 
@@ -111,6 +134,7 @@ public class Sink implements Tockable, StatResettable {
      */
     @Override
     public void resetStatistics() {
-        // YOUR CODE HERE
+        itemCounts.clear();
+        totalTocks = 0;
     }
 }
