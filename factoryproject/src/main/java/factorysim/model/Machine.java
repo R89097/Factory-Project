@@ -33,18 +33,32 @@ public class Machine implements Tickable, StatResettable, OutputSource {
     private String name;
     private int cooldownPeriod;
     private int cooldownRemaining;
+    private String outputItem;
+    private int outputBuffer;
 
     public Machine(MachineConfig config) {
         this.name = config.getName();
         this.cooldownPeriod = config.getCooldown();
         this.cooldownRemaining = 0;
+
+        if (!config.getOutputConfigs().isEmpty()) {
+            this.outputItem = config.getOutputConfigs().get(0).getItemName();
+        } else {
+            this.outputItem = "";
+        }
+
+        this.outputBuffer = 0;
     }
 
     @Override
     public void tick() {
         if (cooldownRemaining > 0) {
             cooldownRemaining--;
+        }else {
+            outputBuffer++;
+            cooldownRemaining = cooldownPeriod;
         }
+        
     }
 
     @Override
@@ -52,17 +66,20 @@ public class Machine implements Tickable, StatResettable, OutputSource {
         cooldownRemaining = 0;
     }
 
-        @Override
+    @Override
     public String itemType() {
-        return "";
+        return outputItem;
     }
 
     @Override
     public boolean canPull() {
-        return false;
+        return outputBuffer > 0;
     }
 
     @Override
     public void pullItem() {
+        if (outputBuffer > 0) {
+            outputBuffer--;
+        }   
     }
 }
