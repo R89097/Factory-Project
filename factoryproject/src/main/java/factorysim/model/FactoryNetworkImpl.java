@@ -18,6 +18,7 @@ public final class FactoryNetworkImpl implements FactoryNetwork {
 
     Sink sink;
     // YOUR FIELDS HERE. You probably want to track the other main factory components
+    List<Machine> machines;
 
     /**
      * Establish a factory network.
@@ -41,7 +42,15 @@ public final class FactoryNetworkImpl implements FactoryNetwork {
         // a BeltValidationException. You might even find it useful to do this first,
         // It is up to you how to approach this/ what data structures you use.
         
-        Sink sink = new Sink();
+        //Sink sink = new Sink();
+
+        this.sink = new Sink();
+        this.machines = new ArrayList<>();
+
+        for (MachineConfig config : machineConfigs) {
+            machines.add(new Machine(config));
+            sink.addSource(machines.get(machines.size() - 1));
+        }
 
         // YOUR CODE HERE (for all other components).
         
@@ -51,5 +60,51 @@ public final class FactoryNetworkImpl implements FactoryNetwork {
     // You should think about what methods this involves.
     // If you've used a good object oriented design on factory components, these methods might be quite simple.
 
+    @Override
+    public void tock() {
+        sink.tock();
+    }
+
+    @Override
+    public void tick() {
+        // later: machines tick
+        for (Machine machine : machines) {
+            machine.tick();
+        }
+    }
+
+    @Override
+    public void resetStatistics() {
+        sink.resetStatistics();
+        for (Machine machine : machines) {
+            machine.resetStatistics();
+        }
+    }
+
+     @Override
+    public List<SinkEntry> getSinkStats() {
+        List<SinkEntry> stats = new ArrayList<>();
+
+        for (String itemType : sink.getItemTypes()) {
+            stats.add(
+                new SinkEntry(
+                    itemType,
+                    sink.getAvgItemsPerMinute(itemType)
+                )
+            );
+        }
+
+        return stats;
+    }
+
+    @Override
+    public List<MachineStats> getMachineStats() {
+        return new ArrayList<>();
+    }
+
+    @Override
+    public List<BeltStats> getBeltStats() {
+        return new ArrayList<>();
+    }
 
 }

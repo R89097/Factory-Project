@@ -7,7 +7,7 @@ import java.util.List;
 /**
  * Simulation model for a machine.
  */
-public class Machine {
+public class Machine implements Tickable, StatResettable, OutputSource {
 
     /**
      * This is a suggested design for the Machine class if you are stuck
@@ -30,4 +30,39 @@ public class Machine {
      * 
      */
 
+    private String name;
+    private int cooldownPeriod;
+    private int cooldownRemaining;
+
+    public Machine(MachineConfig config) {
+        this.name = config.getName();
+        this.cooldownPeriod = config.getCooldown();
+        this.cooldownRemaining = 0;
+    }
+
+    @Override
+    public void tick() {
+        if (cooldownRemaining > 0) {
+            cooldownRemaining--;
+        }
+    }
+
+    @Override
+    public void resetStatistics() {
+        cooldownRemaining = 0;
+    }
+
+        @Override
+    public String itemType() {
+        return "";
+    }
+
+    @Override
+    public boolean canPull() {
+        return false;
+    }
+
+    @Override
+    public void pullItem() {
+    }
 }
