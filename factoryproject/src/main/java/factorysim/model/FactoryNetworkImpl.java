@@ -49,7 +49,9 @@ public final class FactoryNetworkImpl implements FactoryNetwork {
 
         for (MachineConfig config : machineConfigs) {
             machines.add(new Machine(config));
-            sink.addSource(machines.get(machines.size() - 1));
+        }
+        for (Machine machine : machines) {
+            sink.addSource(machine);
         }
 
         // YOUR CODE HERE (for all other components).
@@ -62,7 +64,36 @@ public final class FactoryNetworkImpl implements FactoryNetwork {
 
     @Override
     public void tock() {
+        for (Machine source : machines) {
+            if (!source.canPull()) {
+                continue;
+            }
+            String item = source.itemType();
+            boolean sentToMachine = false;
+
+            for (Machine target : machines) {
+
+                if (source == target) {
+                    continue;
+                }
+                int before = target.canPull() ? 1 : 0;
+
+                if (target.receiveInput(item)) {
+                    sentToMachine = true;
+                    source.pullItem();
+                    break;
+                }
+
+                int after = target.canPull() ? 1 : 0;
+
+                if (after > before) {
+                    sentToMachine = true;
+                    source.pullItem();
+                    break;
+                }
+            }
         sink.tock();
+        }
     }
 
     @Override
@@ -99,7 +130,17 @@ public final class FactoryNetworkImpl implements FactoryNetwork {
 
     @Override
     public List<MachineStats> getMachineStats() {
-        return new ArrayList<>();
+        List<MachineStats> stats = new ArrayList<>();
+
+        for (Machine machine : machines) {
+            stats.add(
+                new MachineStats(
+                    machine.getName(),
+                    machine.getUtilisation()
+                )
+            );
+        }
+        return stats;
     }
 
     @Override

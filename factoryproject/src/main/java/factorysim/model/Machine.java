@@ -33,53 +33,124 @@ public class Machine implements Tickable, StatResettable, OutputSource {
     private String name;
     private int cooldownPeriod;
     private int cooldownRemaining;
-    private String outputItem;
-    private int outputBuffer;
+    private long utilisedTicks;
+    private long totalTicks;
+    private List<Port> inputPorts;
+    private List<Port> outputPorts;
 
     public Machine(MachineConfig config) {
         this.name = config.getName();
         this.cooldownPeriod = config.getCooldown();
         this.cooldownRemaining = 0;
+        this.utilisedTicks = 0;
+        this.totalTicks = 0;
+        this.inputPorts = new ArrayList<>();
+        this.outputPorts = new ArrayList<>();
 
-        if (!config.getOutputConfigs().isEmpty()) {
-            this.outputItem = config.getOutputConfigs().get(0).getItemName();
-        } else {
-            this.outputItem = "";
+        for (var input: config.getInputConfigs()) {
+            inputPorts.add(
+                new Port(input.getItemName(), 
+                input.getAmount(), 
+                input.getBeltName()));
         }
 
-        this.outputBuffer = 0;
+        for (var output: config.getOutputConfigs()) {
+            outputPorts.add(
+                new Port(output.getItemName(), 
+                output.getAmount(), 
+                output.getBeltName()));
+        }
     }
 
     @Override
     public void tick() {
+        totalTicks++;
+
         if (cooldownRemaining > 0) {
+            utilisedTicks++;
             cooldownRemaining--;
-        }else {
-            outputBuffer++;
-            cooldownRemaining = cooldownPeriod;
+        } else {
+            if (canActivate()) {
+                for (Port input : inputPorts) {
+                    while (!input.isEmpty()) {
+                        input.removeItem();
+                    }
+                }
+
+                for (Port output : outputPorts) {
+                    while (!output.isFull()) {
+                        output.addItem();
+                    }
+                }
+                utilisedTicks++;
+                cooldownRemaining = cooldownPeriod;
+            }
         }
-        
     }
 
     @Override
     public void resetStatistics() {
         cooldownRemaining = 0;
+        utilisedTicks = 0;
+        totalTicks = 0;
     }
+    
 
     @Override
     public String itemType() {
-        return outputItem;
+        if (outputPorts.isEmpty()) {
+            return "";
+        }
+        return outputPorts.get(0).getItemType();
     }
 
     @Override
     public boolean canPull() {
-        return outputBuffer > 0;
+        if(outputPorts.isEmpty()) {
+            return false;
+        }
+        return !outputPorts.get(0).isEmpty();
     }
 
     @Override
     public void pullItem() {
-        if (outputBuffer > 0) {
-            outputBuffer--;
-        }   
+        if (!outputPorts.isEmpty()) {
+            outputPorts.get(0).removeItem();
+        }    
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public double getUtilisation() {
+        if (totalTicks == 0) {
+            return 0.0;
+        }
+        return (double) utilisedTicks / totalTicks;
+    }   
+
+    private boolean canActivate() {
+        for (Port port : inputPorts) {
+            if (!port.isFull()) {
+                return false;
+            }
+        }
+        for (Port port : outputPorts) {
+            if (!port.isEmpty()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public boolean receiveInput(String itemType) {
+    for (Port port : inputPorts) {
+        if (port.getItemType().equals(itemType) && !port.isFull()) {
+            port.addItem();
+            return true;
+        }
+    }
+    return false;
     }
 }
